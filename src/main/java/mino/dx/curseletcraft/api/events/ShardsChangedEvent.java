@@ -14,10 +14,10 @@ public class ShardsChangedEvent extends Event {
 
     private final UUID playerUUID;
     private final String playerName;
-    private final int oldShards;
-    private final int newShards;
+    private final long oldShards;
+    private final long newShards;
 
-    public ShardsChangedEvent(@NotNull OfflinePlayer player, int oldShards, int newShards) {
+    public ShardsChangedEvent(@NotNull OfflinePlayer player, long oldShards, long newShards) {
         this.playerUUID = player.getUniqueId();
         this.playerName = player.getName();
         this.oldShards = oldShards;
@@ -32,11 +32,11 @@ public class ShardsChangedEvent extends Event {
         return playerName;
     }
 
-    public int getOldShards() {
+    public long getOldShards() {
         return oldShards;
     }
 
-    public int getNewShards() {
+    public long getNewShards() {
         return newShards;
     }
 

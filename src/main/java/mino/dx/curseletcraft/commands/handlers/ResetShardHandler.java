@@ -12,18 +12,18 @@ import java.util.UUID;
 
 public class ResetShardHandler {
     public static void execute(ShardsEconomy plugin, CommandSender sender, String targetName) {
-
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
         UUID uuid = target.getUniqueId();
+        IShards manager = plugin.getShardsManager();
 
-        IShards shardsManager = plugin.getShardsManager();
-        shardsManager.setShards(uuid, 0);
-
-        // call event
-        int balance = shardsManager.getShards(uuid);
-        ShardsChangedEvent event = new ShardsChangedEvent(target, balance, 0);
-        event.callEvent();
-
-        sender.sendMessage(PluginUtils.formatMessage("&aĐã reset &dShard &avề 0 cho người chơi &e" + target.getName()));
+        manager.getShards(uuid).thenAccept(oldBalance -> manager.setShards(uuid, 0).thenAccept(success -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (success) {
+                ShardsChangedEvent event = new ShardsChangedEvent(target, oldBalance, 0);
+                Bukkit.getPluginManager().callEvent(event);
+                sender.sendMessage(PluginUtils.formatMessage("&aĐã reset &dShard &avề 0 cho người chơi &e" + target.getName()));
+            } else {
+                sender.sendMessage(PluginUtils.formatMessage("&cLỗi hệ thống khi cập nhật Shard cho " + target.getName()));
+            }
+        })));
     }
 }

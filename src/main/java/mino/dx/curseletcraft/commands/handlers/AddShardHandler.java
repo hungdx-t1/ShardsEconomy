@@ -9,6 +9,8 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 public class AddShardHandler {
     public static void execute(ShardsEconomy plugin, CommandSender sender, int amount, String tarPlayer) {
         OfflinePlayer target;
@@ -29,18 +31,22 @@ public class AddShardHandler {
         }
 
         IShards manager = plugin.getShardsManager();
-        manager.addShards(target.getUniqueId(), amount);
+        UUID uuid = target.getUniqueId();
+        String name = target.getName();
 
-        // call event
-        int balance = manager.getShards(target.getUniqueId());
-        ShardsChangedEvent event = new ShardsChangedEvent(target, balance, balance + amount);
-        event.callEvent();
+        manager.getShards(uuid).thenAccept(oldBalance -> manager.addShards(uuid, amount).thenAccept(success -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (success) {
+                ShardsChangedEvent event = new ShardsChangedEvent(target, oldBalance, oldBalance + amount);
+                Bukkit.getPluginManager().callEvent(event);
+                sender.sendMessage(PluginUtils.formatMessage("&aĐã thêm &f" + amount + " &dShard &acho &f" + name));
 
-        sender.sendMessage(PluginUtils.formatMessage("&aĐã thêm &f" + amount + " &dShard &acho &f" + target.getName()));
-
-        if (target.isOnline()) {
-            Player onlineTarget = (Player) target;
-            onlineTarget.sendMessage(PluginUtils.formatMessage("&eBạn đã nhận được &f" + amount + " &dShard &etừ Admin."));
-        }
+                if (target.isOnline()) {
+                    Player onlineTarget = (Player) target;
+                    onlineTarget.sendMessage(PluginUtils.formatMessage("&eBạn đã nhận được &f" + amount + " &dShard &etừ Admin."));
+                }
+            } else {
+                sender.sendMessage(PluginUtils.formatMessage("&cLỗi hệ thống khi cập nhật Shard cho " + name));
+            }
+        })));
     }
 }

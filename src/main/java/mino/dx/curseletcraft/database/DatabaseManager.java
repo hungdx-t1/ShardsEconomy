@@ -31,6 +31,6 @@ public class DatabaseManager {
 
     @Override
     public String toString() {
-        return "Using " + databaseType + " as Database Type.";
+        return databaseType.toString();
     }
 }

@@ -37,7 +37,8 @@ public class Config {
                 "database.port",
                 "database.database",
                 "database.user",
-                "database.password"
+                "database.password",
+                "enable-log-change"
         };
 
         for (String key : requiredKeys) {

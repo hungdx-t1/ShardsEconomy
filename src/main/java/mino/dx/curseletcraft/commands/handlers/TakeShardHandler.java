@@ -16,13 +16,17 @@ public class TakeShardHandler {
         UUID uuid = target.getUniqueId();
         IShards manager = plugin.getShardsManager();
 
-        manager.removeShards(uuid, amount);
-
-        // call event
-        int balance = manager.getShards(uuid);
-        ShardsChangedEvent event = new ShardsChangedEvent(target, balance, amount);
-        event.callEvent();
-
-        sender.sendMessage(PluginUtils.formatMessage("&aĐã xóa &e" + amount + " &dShard &akhỏi " + target.getName()));
+        manager.getShards(uuid).thenAccept(oldBalance -> {
+            long newBalance = Math.max(0, oldBalance - amount);
+            manager.setShards(uuid, (int) newBalance).thenAccept(success -> Bukkit.getScheduler().runTask(plugin, () -> {
+                if (success) {
+                    ShardsChangedEvent event = new ShardsChangedEvent(target, oldBalance, newBalance);
+                    Bukkit.getPluginManager().callEvent(event);
+                    sender.sendMessage(PluginUtils.formatMessage("&aĐã xóa &e" + amount + " &dShard &akhỏi " + target.getName()));
+                } else {
+                    sender.sendMessage(PluginUtils.formatMessage("&cLỗi hệ thống khi cập nhật Shard cho " + target.getName()));
+                }
+            }));
+        });
     }
 }

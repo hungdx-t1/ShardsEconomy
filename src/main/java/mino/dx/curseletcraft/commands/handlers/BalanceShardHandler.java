@@ -13,7 +13,8 @@ public class BalanceShardHandler {
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
         UUID uuid = target.getUniqueId();
 
-        int shards = plugin.getShardsManager().getShards(uuid);
-        sender.sendMessage(PluginUtils.formatMessage("&e" + target.getName() + " &ahiện đang có &d" + shards + " &aShard."));
+        plugin.getShardsManager().getShards(uuid).thenAccept(
+                bal -> sender.sendMessage(PluginUtils.formatMessage("&e" + target.getName() + " &ahiện đang có &d" + bal + " &aShard."))
+        );
     }
 }

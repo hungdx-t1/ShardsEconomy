@@ -5,3 +5,4 @@ database:
   database: shardsdb
   user: root
   password: ""
+enable-log-change: true

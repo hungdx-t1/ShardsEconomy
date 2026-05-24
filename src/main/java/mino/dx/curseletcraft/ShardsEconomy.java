@@ -5,7 +5,10 @@ import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.commands.ShardsCmd;
 import mino.dx.curseletcraft.config.Config;
 import mino.dx.curseletcraft.database.DatabaseManager;
+import mino.dx.curseletcraft.handler.CacheHandler;
 import mino.dx.curseletcraft.hooks.RegisterPlaceholder;
+import mino.dx.curseletcraft.listeners.CacheListener;
+import mino.dx.curseletcraft.listeners.ShardChangedListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,6 +19,7 @@ public final class ShardsEconomy extends JavaPlugin {
 
     private IShards shardManager;
     private DatabaseManager databaseManager;
+    private CacheHandler cacheHandler;
 
     @Override
     public void onEnable() {
@@ -31,14 +35,17 @@ public final class ShardsEconomy extends JavaPlugin {
             return;
         }
 
-        // register command
-        // List.of: aliases of command, can use /shards, /shard or /shardsx
+        this.cacheHandler = new CacheHandler(this);
+
+        getServer().getPluginManager().registerEvents(new CacheListener(this.cacheHandler), this);
+        getServer().getPluginManager().registerEvents(new ShardChangedListener(this), this);
+
         this.getLifecycleManager().registerEventHandler(
                 LifecycleEvents.COMMANDS,
                 event ->
                         event.registrar().register(
                                 ShardsCmd.build(this).build(),
-                                "No description",
+                                "Shards sub commands",
                                 List.of("shard", "shardsx")));
 
         if(getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
@@ -65,5 +72,9 @@ public final class ShardsEconomy extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public CacheHandler getCacheHandler() {
+        return cacheHandler;
     }
 }
