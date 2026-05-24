@@ -1,29 +1,36 @@
-package mino.dx.curseletcraft.database.sync;
+package mino.dx.curseletcraft.database;
 
 import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.utils.PluginUtils;
 import org.bukkit.Bukkit;
 
+import java.io.File;
 import java.sql.*;
 import java.util.UUID;
+import java.util.logging.Level;
 
 // SQLite
 public class ShardsManager implements IShards {
 
     private final ShardsEconomy plugin;
-
-    private final Connection connection;
+    private Connection connection;
     private final boolean isAsync;
 
-    public ShardsManager(ShardsEconomy plugin, String dbPath) throws SQLException {
+    public ShardsManager(ShardsEconomy plugin) {
         this.plugin = plugin;
-        this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
         this.isAsync = plugin.getConfig().getBoolean("database.enable-async", true);
-        createTable();
+        try {
+            File dataFolder = plugin.getDataFolder();
+            File dbFile = new File(dataFolder, "shards.db");
+            this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getPath());
+            createTable();
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Không thể khởi tạo ShardsManager!", e);
+        }
     }
 
-    private void createTable() throws SQLException {
+    private void createTable() {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS shards (
@@ -31,6 +38,8 @@ public class ShardsManager implements IShards {
                     amount INTEGER NOT NULL
                 );
             """);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "createTable() error!", e);
         }
     }
 

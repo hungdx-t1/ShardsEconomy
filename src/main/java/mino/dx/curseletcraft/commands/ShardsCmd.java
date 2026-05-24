@@ -19,7 +19,6 @@ import static io.papermc.paper.command.brigadier.Commands.argument;
 import static io.papermc.paper.command.brigadier.Commands.literal;
 
 public class ShardsCmd {
-
     public static LiteralArgumentBuilder<CommandSourceStack> build(ShardsEconomy plugin) {
         return literal("shards")
                 .requires(src -> src.getSender().hasPermission("shardsx.use"))

@@ -22,6 +22,8 @@ public class PluginUtils {
         dotFormatter.setGroupingUsed(true);
     }
 
+    private PluginUtils() {}
+
     public static void log(String s) {
         shardsx.getLogger().log(Level.INFO, s);
     }

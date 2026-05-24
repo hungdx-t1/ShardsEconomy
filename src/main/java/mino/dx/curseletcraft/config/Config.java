@@ -32,12 +32,12 @@ public class Config {
 
     private static void checkFileConfig() {
         String[] requiredKeys = {
-                "plugin.database.enable",
-                "plugin.database.host",
-                "plugin.database.port",
-                "plugin.database.database",
-                "plugin.database.user",
-                "plugin.database.password"
+                "database.enable-mysql",
+                "database.host",
+                "database.port",
+                "database.database",
+                "database.user",
+                "database.password"
         };
 
         for (String key : requiredKeys) {

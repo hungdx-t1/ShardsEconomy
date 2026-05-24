@@ -3,9 +3,7 @@ package mino.dx.curseletcraft.database;
 @SuppressWarnings("unused")
 public enum DatabaseType {
     MYSQL(new TypeString("mysql", false)),
-    SQLITE(new TypeString("sqlite", false)),
-    MYSQL_ASYNC(new TypeString("mysql", true)),
-    SQLITE_ASYNC(new TypeString("sqlite", true));
+    SQLITE(new TypeString("sqlite", false));
 
     private record TypeString(String databaseType, boolean isAsync) {}
     private final TypeString typeString;

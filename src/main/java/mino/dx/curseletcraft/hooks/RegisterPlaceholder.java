@@ -32,18 +32,15 @@ public class RegisterPlaceholder extends PlaceholderExpansion {
         return null; // End
     }
 
-    // other functions
-
     @Override
     public boolean persist() {
-        return true; //
+        return true;
     }
 
     @Override
     @NotNull
-    @SuppressWarnings("all")
     public String getAuthor() {
-        return plugin.getDescription().getAuthors().get(0);
+        return plugin.getPluginMeta().getAuthors().getFirst();
     }
 
     @Override
@@ -54,9 +51,7 @@ public class RegisterPlaceholder extends PlaceholderExpansion {
 
     @Override
     @NotNull
-    @SuppressWarnings("all")
     public String getVersion() {
-        return plugin.getDescription().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
-
 }

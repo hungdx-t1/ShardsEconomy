@@ -1,8 +1,7 @@
 database:
-  enable: true
-  enable-async: true
+  enable-mysql: true
   host: localhost
   port: 3306
-  name: shardsdb
+  database: shardsdb
   user: root
   password: ""

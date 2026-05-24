@@ -1,4 +1,4 @@
-package mino.dx.curseletcraft.database.sync;
+package mino.dx.curseletcraft.database;
 
 import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
@@ -16,7 +16,7 @@ public class ShardsManagerMySQL implements IShards {
         try {
             String host = plugin.getConfig().getString("database.host");
             String port = plugin.getConfig().getString("database.port");
-            String database = plugin.getConfig().getString("database.name");
+            String database = plugin.getConfig().getString("database.database");
             String user = plugin.getConfig().getString("database.user");
             String password = plugin.getConfig().getString("database.password");
 
