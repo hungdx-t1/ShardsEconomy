@@ -8,14 +8,11 @@ import java.io.File;
 import java.sql.*;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
 
 public class ShardsManager implements IShards {
-    private final ShardsEconomy plugin;
     private final Connection connection;
 
     public ShardsManager(ShardsEconomy plugin) {
-        this.plugin = plugin;
         try {
             File dataFolder = plugin.getDataFolder();
             File dbFile = new File(dataFolder, "shards.db");
@@ -35,7 +32,7 @@ public class ShardsManager implements IShards {
                 );
             """);
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "createTable() error!", e);
+            throw new RuntimeException("Failed to create table shards", e);
         }
     }
 
@@ -56,13 +53,12 @@ public class ShardsManager implements IShards {
 
     @Override
     public CompletableFuture<Boolean> setShards(UUID uuid, int amount) {
-        // Trả về true nếu update thành công, false nếu lỗi
         return CompletableFuture.supplyAsync(() -> {
             try (PreparedStatement ps = connection.prepareStatement("""
             INSERT INTO shards (uuid, amount)
             VALUES (?, ?)
-            ON CONFLICT amount = VALUES(amount)
-        """)) { // Lưu ý: Cú pháp ON CONFLICT là của SQLite/PostgreSQL. Nếu dùng MySQL chuẩn thì là ON DUPLICATE KEY UPDATE
+            ON CONFLICT(uuid) DO UPDATE SET amount = excluded.amount
+        """)) {
                 ps.setString(1, uuid.toString());
                 ps.setInt(2, Math.max(0, amount));
                 ps.executeUpdate();

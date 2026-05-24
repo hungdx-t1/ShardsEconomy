@@ -23,13 +23,13 @@ public class ShardsManagerMySQL implements IShards {
             connection = DriverManager.getConnection(url, user, password);
 
             createTable();
-            PluginUtils.log("ShardManager MySQL initialized.");
-        } catch (SQLException e) {
-            throw new RuntimeException(("Failed to connect to MySQL database: " + e.getMessage()));
+            PluginUtils.log("MySQL initialized.");
+        } catch (Exception e) {
+            throw new RuntimeException(("Failed to initialize MySQL database: " + e.getMessage()));
         }
     }
 
-    private void createTable() throws SQLException {
+    private void createTable() {
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS shards (
@@ -37,49 +37,53 @@ public class ShardsManagerMySQL implements IShards {
                     amount INT NOT NULL
                 );
             """);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create table shards", e);
         }
     }
 
     @Override
     public CompletableFuture<Long> getShards(UUID uuid) {
-        try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
-            ps.setString(1, uuid.toString());
-            ResultSet rs = ps.executeQuery();
-            return rs.next() ? rs.getInt("amount") : 0;
-        } catch (SQLException e) {
-            PluginUtils.err(e.getMessage());
-            return 0;
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
+                ps.setString(1, uuid.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? rs.getLong("amount") : 0L;
+                }
+            } catch (SQLException e) {
+                PluginUtils.err(e.getMessage());
+                return 0L;
+            }
+        });
     }
 
     @Override
     public CompletableFuture<Boolean> setShards(UUID uuid, int amount) {
-        try (PreparedStatement ps = connection.prepareStatement("""
-            INSERT INTO shards (uuid, amount)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE amount = VALUES(amount)
-        """)) {
-            ps.setString(1, uuid.toString());
-            ps.setInt(2, Math.max(0, amount));
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            PluginUtils.err(e.getMessage());
-        }
-        return null;
+        return CompletableFuture.supplyAsync(() -> {
+            try (PreparedStatement ps = connection.prepareStatement("""
+                INSERT INTO shards (uuid, amount)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE amount = VALUES(amount)
+            """)) {
+                ps.setString(1, uuid.toString());
+                ps.setInt(2, Math.max(0, amount));
+                ps.executeUpdate();
+                return true;
+            } catch (SQLException e) {
+                PluginUtils.err(e.getMessage());
+                return false;
+            }
+        });
     }
 
     @Override
     public CompletableFuture<Boolean> addShards(UUID uuid, int amount) {
-        int current = getShards(uuid);
-        setShards(uuid, current + amount);
-        return null;
+        return getShards(uuid).thenCompose(current -> setShards(uuid, (int) (current + amount)));
     }
 
     @Override
     public CompletableFuture<Boolean> removeShards(UUID uuid, int amount) {
-        int current = getShards(uuid);
-        setShards(uuid, Math.max(0, current - amount));
-        return null;
+        return getShards(uuid).thenCompose(current -> setShards(uuid, (int) Math.max(0, current - amount)));
     }
 
     public void close() throws SQLException {

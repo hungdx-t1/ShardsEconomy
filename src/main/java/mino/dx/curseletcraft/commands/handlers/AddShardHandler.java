@@ -29,7 +29,7 @@ public class AddShardHandler {
         }
 
         IShards manager = plugin.getShardsManager();
-        manager.addShards(target.getUniqueId(), amount); // <-- dòng này, chỉ chạy sync
+        manager.addShards(target.getUniqueId(), amount);
 
         // call event
         int balance = manager.getShards(target.getUniqueId());
