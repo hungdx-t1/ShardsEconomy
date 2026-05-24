@@ -4,10 +4,8 @@ import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.ApiStatus;
 
 @SuppressWarnings("unused")
-@ApiStatus.Experimental
 public class ShardsAPI {
     public static IShards get() {
         Plugin plugin = Bukkit.getPluginManager().getPlugin("ShardsEconomy");

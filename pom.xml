@@ -6,7 +6,7 @@
 
     <groupId>mino.dx</groupId>
     <artifactId>ShardsEconomy</artifactId>
-    <version>1.0.3-BETA-1</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>ShardsEconomy</name>

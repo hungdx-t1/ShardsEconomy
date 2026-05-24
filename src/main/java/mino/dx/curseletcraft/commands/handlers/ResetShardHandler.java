@@ -11,7 +11,6 @@ import org.bukkit.command.CommandSender;
 import java.util.UUID;
 
 public class ResetShardHandler {
-
     public static void execute(ShardsEconomy plugin, CommandSender sender, String targetName) {
 
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);

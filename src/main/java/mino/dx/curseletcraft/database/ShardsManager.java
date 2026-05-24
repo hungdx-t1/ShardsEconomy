@@ -3,30 +3,26 @@ package mino.dx.curseletcraft.database;
 import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.utils.PluginUtils;
-import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.sql.*;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
-// SQLite
 public class ShardsManager implements IShards {
-
     private final ShardsEconomy plugin;
-    private Connection connection;
-    private final boolean isAsync;
+    private final Connection connection;
 
     public ShardsManager(ShardsEconomy plugin) {
         this.plugin = plugin;
-        this.isAsync = plugin.getConfig().getBoolean("database.enable-async", true);
         try {
             File dataFolder = plugin.getDataFolder();
             File dbFile = new File(dataFolder, "shards.db");
             this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getPath());
             createTable();
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Không thể khởi tạo ShardsManager!", e);
+            throw new RuntimeException("Failed to initialize SQLite database", e);
         }
     }
 
@@ -44,57 +40,51 @@ public class ShardsManager implements IShards {
     }
 
     @Override
-    public int getShards(UUID uuid) {
-        try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
-            ps.setString(1, uuid.toString());
-            ResultSet rs = ps.executeQuery();
-            return rs.next() ? rs.getInt("amount") : 0;
-        } catch (SQLException e) {
-            PluginUtils.err(e.getMessage());
-            return 0;
-        }
+    public CompletableFuture<Long> getShards(UUID uuid) {
+        return CompletableFuture.supplyAsync(() -> {
+            try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
+                ps.setString(1, uuid.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? rs.getLong("amount") : 0L;
+                }
+            } catch (SQLException e) {
+                PluginUtils.err(e.getMessage());
+                return 0L;
+            }
+        });
     }
 
     @Override
-    public void setShards(UUID uuid, int amount) {
-        Runnable runnable = () -> {
+    public CompletableFuture<Boolean> setShards(UUID uuid, int amount) {
+        // Trả về true nếu update thành công, false nếu lỗi
+        return CompletableFuture.supplyAsync(() -> {
             try (PreparedStatement ps = connection.prepareStatement("""
-                INSERT INTO shards (uuid, amount)
-                VALUES (?, ?)
-                ON CONFLICT(uuid) DO UPDATE SET amount = excluded.amount
-            """)) {
+            INSERT INTO shards (uuid, amount)
+            VALUES (?, ?)
+            ON CONFLICT amount = VALUES(amount)
+        """)) { // Lưu ý: Cú pháp ON CONFLICT là của SQLite/PostgreSQL. Nếu dùng MySQL chuẩn thì là ON DUPLICATE KEY UPDATE
                 ps.setString(1, uuid.toString());
                 ps.setInt(2, Math.max(0, amount));
                 ps.executeUpdate();
+                return true;
             } catch (SQLException e) {
                 PluginUtils.err(e.getMessage());
+                return false;
             }
-        };
-
-        if (isAsync) {
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, runnable);
-        } else {
-            runnable.run();
-        }
+        });
     }
 
     @Override
-    public void addShards(UUID uuid, int amount) {
-        int current = getShards(uuid);
-        setShards(uuid, current + amount);
+    public CompletableFuture<Boolean> addShards(UUID uuid, int amount) {
+        return getShards(uuid).thenCompose(cur -> setShards(uuid, (int) (cur + amount)));
     }
 
     @Override
-    public void removeShards(UUID uuid, int amount) {
-        int current = getShards(uuid);
-        setShards(uuid, Math.max(0, current - amount));
+    public CompletableFuture<Boolean> removeShards(UUID uuid, int amount) {
+        return getShards(uuid).thenCompose(cur -> setShards(uuid, (int) Math.max(0, cur - amount)));
     }
 
-    public void close() {
-        try {
-            if (!connection.isClosed()) connection.close();
-        } catch (SQLException e) {
-            PluginUtils.err(e.getMessage());
-        }
+    public void close() throws SQLException {
+        if (!connection.isClosed()) connection.close();
     }
 }

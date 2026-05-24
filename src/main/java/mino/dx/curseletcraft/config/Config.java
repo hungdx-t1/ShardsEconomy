@@ -49,6 +49,5 @@ public class Config {
         PluginUtils.log("File config đã được kiểm tra. " +
                 "Nếu thiếu cấu hình, vui lòng kiểm tra file config.yml trong plugin này " +
                 "bằng ứng dụng 7Zip hoặc WinRAR.");
-
     }
 }

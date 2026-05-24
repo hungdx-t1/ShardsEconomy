@@ -3,13 +3,12 @@ package mino.dx.curseletcraft.database;
 import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.utils.PluginUtils;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.*;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class ShardsManagerMySQL implements IShards {
-
     private final Connection connection;
 
     public ShardsManagerMySQL(ShardsEconomy plugin) {
@@ -26,7 +25,6 @@ public class ShardsManagerMySQL implements IShards {
             createTable();
             PluginUtils.log("ShardManager MySQL initialized.");
         } catch (SQLException e) {
-            PluginUtils.err("MySQL connection failed: " + e.getMessage());
             throw new RuntimeException(("Failed to connect to MySQL database: " + e.getMessage()));
         }
     }
@@ -43,7 +41,7 @@ public class ShardsManagerMySQL implements IShards {
     }
 
     @Override
-    public int getShards(UUID uuid) {
+    public CompletableFuture<Long> getShards(UUID uuid) {
         try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
             ResultSet rs = ps.executeQuery();
@@ -55,7 +53,7 @@ public class ShardsManagerMySQL implements IShards {
     }
 
     @Override
-    public void setShards(UUID uuid, int amount) {
+    public CompletableFuture<Boolean> setShards(UUID uuid, int amount) {
         try (PreparedStatement ps = connection.prepareStatement("""
             INSERT INTO shards (uuid, amount)
             VALUES (?, ?)
@@ -67,37 +65,24 @@ public class ShardsManagerMySQL implements IShards {
         } catch (SQLException e) {
             PluginUtils.err(e.getMessage());
         }
+        return null;
     }
 
     @Override
-    public void addShards(UUID uuid, int amount) {
+    public CompletableFuture<Boolean> addShards(UUID uuid, int amount) {
         int current = getShards(uuid);
         setShards(uuid, current + amount);
+        return null;
     }
 
     @Override
-    public void removeShards(UUID uuid, int amount) {
+    public CompletableFuture<Boolean> removeShards(UUID uuid, int amount) {
         int current = getShards(uuid);
         setShards(uuid, Math.max(0, current - amount));
+        return null;
     }
 
-    public void close() {
-        try {
-            if (!connection.isClosed()) connection.close();
-        } catch (SQLException e) {
-            PluginUtils.err(e.getMessage());
-        }
+    public void close() throws SQLException {
+        if (!connection.isClosed()) connection.close();
     }
-
-    public static Connection getConnection(JavaPlugin plugin) throws SQLException {
-        String host = plugin.getConfig().getString("database.host");
-        String port = plugin.getConfig().getString("database.port");
-        String database = plugin.getConfig().getString("database.name");
-        String user = plugin.getConfig().getString("database.user");
-        String password = plugin.getConfig().getString("database.password");
-
-        String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true";
-        return DriverManager.getConnection(url, user, password);
-    }
-
 }

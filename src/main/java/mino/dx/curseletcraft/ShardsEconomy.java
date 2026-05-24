@@ -5,14 +5,15 @@ import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.commands.ShardsCmd;
 import mino.dx.curseletcraft.config.Config;
 import mino.dx.curseletcraft.database.DatabaseManager;
-import mino.dx.curseletcraft.database.ShardsManager;
-import mino.dx.curseletcraft.database.ShardsManagerMySQL;
 import mino.dx.curseletcraft.hooks.RegisterPlaceholder;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.sql.SQLException;
 import java.util.List;
+import java.util.logging.Level;
 
+@SuppressWarnings("unused")
 public final class ShardsEconomy extends JavaPlugin {
 
     private IShards shardManager;
@@ -46,19 +47,20 @@ public final class ShardsEconomy extends JavaPlugin {
             Bukkit.getScheduler().runTask(this, () -> new RegisterPlaceholder(this).register());
         }
 
-        getLogger().info("CurseletCraft-ShardsX đã được bật thành công!");
+        getLogger().info("ShardsEconomy đã được bật thành công!");
     }
 
     @Override
     public void onDisable() {
-        if (shardManager instanceof ShardsManager manager) {
-            manager.close();
-        } else if (shardManager instanceof ShardsManagerMySQL mysqlManager) {
-            mysqlManager.close();
+        if(shardManager != null) {
+            try {
+                shardManager.close();
+            } catch (SQLException e) {
+                getLogger().log(Level.SEVERE, "Cannot close database!", e);
+            }
         }
     }
 
-    // Getters
     public IShards getShardsManager() {
         return shardManager;
     }
@@ -67,7 +69,6 @@ public final class ShardsEconomy extends JavaPlugin {
         return this;
     }
 
-    @SuppressWarnings("unused")
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
     }

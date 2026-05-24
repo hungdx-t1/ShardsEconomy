@@ -10,7 +10,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class AddShardHandler {
-
     public static void execute(ShardsEconomy plugin, CommandSender sender, int amount, String tarPlayer) {
         OfflinePlayer target;
         // Nếu như không có đề cập tarPlayer thì sẽ thêm shard cho người sử dụng lệnh

@@ -8,7 +8,6 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
 public class RegisterPlaceholder extends PlaceholderExpansion {
-
     private final ShardsEconomy plugin;
     private final IShards shardManager;
 
@@ -20,14 +19,14 @@ public class RegisterPlaceholder extends PlaceholderExpansion {
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String placeholder) {
         if(player != null) {
-            long shards = shardManager.getShards(player.getUniqueId());
-
-            switch (placeholder.toLowerCase()) {
-                case "shards": // placeholder thành %shardsx_shards%
-                    return String.valueOf(shards); // vd: 1234
-                case "shards_formatted": // placeholder thành %shardsx_shards_formatted%
-                    return PluginUtils.formatWithDot(shards); // vd: 1.234
-            }
+            shardManager.getShards(player.getUniqueId()).thenAccept(shards -> {
+                switch (placeholder.toLowerCase()) {
+                    case "shards": // placeholder thành %shardsx_shards%
+                        return String.valueOf(shards); // vd: 1234
+                    case "shards_formatted": // placeholder thành %shardsx_shards_formatted%
+                        return PluginUtils.formatWithDot(shards); // vd: 1.234
+                }
+            });
         }
         return null; // End
     }
