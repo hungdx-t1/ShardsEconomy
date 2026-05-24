@@ -1,5 +1,7 @@
 package mino.dx.curseletcraft.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import mino.dx.curseletcraft.ShardsEconomy;
 import mino.dx.curseletcraft.api.interfaces.IShards;
 import mino.dx.curseletcraft.utils.PluginUtils;
@@ -10,21 +12,32 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class ShardsManager implements IShards {
-    private final Connection connection;
+    private final HikariDataSource dataSource;
 
     public ShardsManager(ShardsEconomy plugin) {
+        File dataFolder = plugin.getDataFolder();
+        File dbFile = new File(dataFolder, "shards.db");
+
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl("jdbc:sqlite:" + dbFile.getPath());
+        config.setDriverClassName("org.sqlite.JDBC"); // Thỉnh thoảng Hikari cần khai báo rõ cho SQLite
+
+        // BẮT BUỘC cho SQLite để tránh lỗi Database is locked
+        config.setMaximumPoolSize(1);
+        config.setConnectionTestQuery("SELECT 1");
+
+        this.dataSource = new HikariDataSource(config);
+
         try {
-            File dataFolder = plugin.getDataFolder();
-            File dbFile = new File(dataFolder, "shards.db");
-            this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getPath());
             createTable();
+            PluginUtils.log("SQLite initialized.");
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize SQLite database", e);
         }
     }
 
     private void createTable() {
-        try (Statement stmt = connection.createStatement()) {
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
             stmt.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS shards (
                     uuid TEXT PRIMARY KEY,
@@ -39,7 +52,8 @@ public class ShardsManager implements IShards {
     @Override
     public CompletableFuture<Long> getShards(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
-            try (PreparedStatement ps = connection.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("SELECT amount FROM shards WHERE uuid = ?")) {
                 ps.setString(1, uuid.toString());
                 try (ResultSet rs = ps.executeQuery()) {
                     return rs.next() ? rs.getLong("amount") : 0L;
@@ -54,7 +68,8 @@ public class ShardsManager implements IShards {
     @Override
     public CompletableFuture<Boolean> setShards(UUID uuid, int amount) {
         return CompletableFuture.supplyAsync(() -> {
-            try (PreparedStatement ps = connection.prepareStatement("""
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("""
             INSERT INTO shards (uuid, amount)
             VALUES (?, ?)
             ON CONFLICT(uuid) DO UPDATE SET amount = excluded.amount
@@ -80,7 +95,9 @@ public class ShardsManager implements IShards {
         return getShards(uuid).thenCompose(cur -> setShards(uuid, (int) Math.max(0, cur - amount)));
     }
 
-    public void close() throws SQLException {
-        if (!connection.isClosed()) connection.close();
+    public void close() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
     }
 }

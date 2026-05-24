@@ -9,9 +9,7 @@ import mino.dx.curseletcraft.hooks.RegisterPlaceholder;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.sql.SQLException;
 import java.util.List;
-import java.util.logging.Level;
 
 @SuppressWarnings("unused")
 public final class ShardsEconomy extends JavaPlugin {
@@ -53,11 +51,7 @@ public final class ShardsEconomy extends JavaPlugin {
     @Override
     public void onDisable() {
         if(shardManager != null) {
-            try {
-                shardManager.close();
-            } catch (SQLException e) {
-                getLogger().log(Level.SEVERE, "Cannot close database!", e);
-            }
+            shardManager.close();
         }
     }
 
